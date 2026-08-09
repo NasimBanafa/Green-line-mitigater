@@ -168,8 +168,13 @@ class OverlayService : Service() {
     private fun applyMaskToView(view: View, mask: MaskBarEntity) {
         val colorInt = try {
             val parsed = Color.parseColor(mask.colorHex)
-            val alpha = (mask.opacity * 255).toInt().coerceIn(0, 255)
-            Color.argb(alpha, Color.red(parsed), Color.green(parsed), Color.blue(parsed))
+            if (mask.opacity >= 0.99f) {
+                // Pure solid 24-bit RGB (Alpha = 255 / 0xFF) for true 100% OLED black
+                Color.rgb(Color.red(parsed), Color.green(parsed), Color.blue(parsed))
+            } else {
+                val alpha = (mask.opacity * 255).toInt().coerceIn(0, 255)
+                Color.argb(alpha, Color.red(parsed), Color.green(parsed), Color.blue(parsed))
+            }
         } catch (e: Exception) {
             Color.BLACK
         }
@@ -220,14 +225,23 @@ class OverlayService : Service() {
             )
         }
 
+        val isFullyOpaque = mask.opacity >= 0.99f
+        // PixelFormat.OPAQUE bypasses SurfaceFlinger alpha blending pass for 100% true OLED black (0 nits)
+        val windowFormat = if (isFullyOpaque) {
+            PixelFormat.OPAQUE
+        } else {
+            PixelFormat.TRANSLUCENT
+        }
+
         val params = WindowManager.LayoutParams(
             barWidthPx,
             barHeightPx,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             flags,
-            PixelFormat.TRANSLUCENT
+            windowFormat
         )
 
+        params.alpha = mask.opacity.coerceIn(0.05f, 1.0f)
         params.gravity = Gravity.TOP or Gravity.START
         params.x = (mappedPos.x - barWidthPx / 2f).toInt()
         params.y = (mappedPos.y - barHeightPx / 2f).toInt()
