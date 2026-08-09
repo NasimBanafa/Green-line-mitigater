@@ -1,0 +1,6 @@
+{
+  "name": "Line Mask",
+  "description": "OLED display green line overlay mask to hide screen hardware defects with position lock, orientation lock, and root support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
