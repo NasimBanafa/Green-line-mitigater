@@ -19,6 +19,20 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication">
 
+        <!-- Xposed / LSPosed Module Configuration -->
+        <meta-data
+            android:name="xposedmodule"
+            android:value="true" />
+        <meta-data
+            android:name="xposeddescription"
+            android:value="Line Mask Xposed/LSPosed Module: Grants system privileges to overlay service, prevents app termination/kill, bypasses FLAG_SECURE, and forces system-level persistence." />
+        <meta-data
+            android:name="xposedminversion"
+            android:value="93" />
+        <meta-data
+            android:name="xposedscope"
+            android:value="com.android.systemui,android" />
+
         <service
             android:name=".service.OverlayService"
             android:enabled="true"

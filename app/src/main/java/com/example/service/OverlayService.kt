@@ -13,6 +13,8 @@ import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
 import android.os.Build
 import android.os.IBinder
+import android.provider.Settings
+import android.util.Log
 import android.view.Display
 import android.view.Gravity
 import android.view.OrientationEventListener
@@ -127,32 +129,39 @@ class OverlayService : Service() {
             if (existingView != null) {
                 updateSingleOverlayView(existingView, mask)
             } else {
-                val newView = createOverlayViewForMask(mask)
-                overlayViews[mask.id] = newView
+                createOverlayViewForMask(mask)?.let { newView ->
+                    overlayViews[mask.id] = newView
+                }
             }
         }
     }
 
-    private fun createOverlayViewForMask(mask: MaskBarEntity): View {
+    private fun createOverlayViewForMask(mask: MaskBarEntity): View? {
+        if (!Settings.canDrawOverlays(this)) {
+            Log.e("OverlayService", "Overlay permission not granted. Cannot add window.")
+            return null
+        }
         val view = View(this)
         applyMaskToView(view, mask)
 
         val params = createLayoutParamsForMask(mask)
-        try {
+        return try {
             windowManager.addView(view, params)
+            view
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("OverlayService", "Failed to add overlay view for mask ${mask.id}", e)
+            null
         }
-        return view
     }
 
     private fun updateSingleOverlayView(view: View, mask: MaskBarEntity) {
+        if (!Settings.canDrawOverlays(this)) return
         applyMaskToView(view, mask)
         val params = createLayoutParamsForMask(mask)
         try {
             windowManager.updateViewLayout(view, params)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("OverlayService", "Failed to update overlay view layout for mask ${mask.id}", e)
         }
     }
 
@@ -256,6 +265,10 @@ class OverlayService : Service() {
 
     private fun applyOrientationLock(enable: Boolean, orientation: Int = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
         if (enable) {
+            if (!Settings.canDrawOverlays(this)) {
+                Log.e("OverlayService", "Overlay permission missing, skipping orientation lock view.")
+                return
+            }
             if (orientationLockView == null) {
                 val dummy = View(this)
                 val params = WindowManager.LayoutParams(

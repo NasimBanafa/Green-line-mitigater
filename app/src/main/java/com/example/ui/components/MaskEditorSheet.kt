@@ -83,6 +83,7 @@ fun MaskEditorSheet(
     var thicknessDp by remember { mutableIntStateOf(mask.thicknessDp) }
     var lengthRatio by remember { mutableFloatStateOf(mask.lengthRatio) }
     var angleDegrees by remember { mutableFloatStateOf(mask.angleDegrees) }
+    var opacity by remember { mutableFloatStateOf(mask.opacity) }
     var colorHex by remember { mutableStateOf(mask.colorHex) }
     var touchPassThrough by remember { mutableStateOf(mask.touchPassThrough) }
     var hardwareLockOrientation by remember { mutableStateOf(mask.hardwareLockOrientation) }
@@ -162,7 +163,7 @@ fun MaskEditorSheet(
                                 if (isVertical) thicknessDp.dp else (180.dp * lengthRatio),
                                 if (isVertical) (180.dp * lengthRatio) else thicknessDp.dp
                             )
-                            .background(try { Color(android.graphics.Color.parseColor(colorHex)) } catch (e: Exception) { Color.Black })
+                            .background(try { Color(android.graphics.Color.parseColor(colorHex)).copy(alpha = opacity) } catch (e: Exception) { Color.Black.copy(alpha = opacity) })
                     )
 
                     Surface(
@@ -346,6 +347,42 @@ fun MaskEditorSheet(
             Spacer(modifier = Modifier.height(12.dp))
 
             Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Mask Opacity / Transparency: ${(opacity * 100).toInt()}%",
+                        color = TextPrimary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Row {
+                        NudgeButton(label = "100%") { opacity = 1.0f }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        NudgeButton(label = "75%") { opacity = 0.75f }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        NudgeButton(label = "50%") { opacity = 0.50f }
+                    }
+                }
+
+                Slider(
+                    value = opacity,
+                    onValueChange = { opacity = it },
+                    valueRange = 0.05f..1f,
+                    colors = SliderDefaults.colors(
+                        thumbColor = CyanAccent,
+                        activeTrackColor = CyanAccent,
+                        inactiveTrackColor = DarkCardBorder
+                    ),
+                    modifier = Modifier.testTag("opacity_slider")
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Column {
                 Text(
                     text = "Angle Tilt: ${angleDegrees.toInt()}°",
                     color = TextPrimary,
@@ -466,6 +503,7 @@ fun MaskEditorSheet(
                         thicknessDp = thicknessDp,
                         lengthRatio = lengthRatio,
                         angleDegrees = angleDegrees,
+                        opacity = opacity,
                         colorHex = colorHex,
                         touchPassThrough = touchPassThrough,
                         hardwareLockOrientation = hardwareLockOrientation

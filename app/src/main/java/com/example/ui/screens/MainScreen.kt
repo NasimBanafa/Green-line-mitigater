@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.ScreenRotation
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -199,6 +200,47 @@ fun MainScreen(
                             text = if (isServiceRunning) "OVERLAY ON" else "START OVERLAY",
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                val isXposedActive = remember { com.example.xposed.XposedStatus.isModuleActive() }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (isXposedActive) EmeraldGreen.copy(alpha = 0.15f) else IndigoAccent.copy(alpha = 0.12f))
+                        .border(
+                            1.dp,
+                            if (isXposedActive) EmeraldGreen.copy(alpha = 0.4f) else GlassCardBorder,
+                            RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Security,
+                        contentDescription = "Xposed Module",
+                        tint = if (isXposedActive) EmeraldGreen else IndigoAccent,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isXposedActive) "LSPosed / Xposed Module Active" else "Xposed / LSPosed Anti-Kill Ready",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isXposedActive) EmeraldGreen else TextPrimary
+                        )
+                        Text(
+                            text = if (isXposedActive)
+                                "System privileges active: FLAG_SECURE bypassed, service protected from app kill."
+                            else
+                                "Module embedded. Enable in LSPosed / EdXposed manager for system-level anti-kill protection.",
+                            fontSize = 10.sp,
+                            color = TextSecondary
                         )
                     }
                 }
