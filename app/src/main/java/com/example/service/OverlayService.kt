@@ -18,6 +18,7 @@ import android.util.Log
 import android.view.Display
 import android.view.Gravity
 import android.view.OrientationEventListener
+import android.view.Surface
 import android.view.View
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
@@ -203,10 +204,19 @@ class OverlayService : Service() {
         val density = resources.displayMetrics.density
         val thicknessPx = (mask.thicknessDp * density).toInt().coerceAtLeast(1)
 
+        val effectiveIsVertical = if (mask.hardwareLockOrientation) {
+            when (rotation) {
+                Surface.ROTATION_90, Surface.ROTATION_270 -> !mask.isVertical
+                else -> mask.isVertical
+            }
+        } else {
+            mask.isVertical
+        }
+
         val barWidthPx: Int
         val barHeightPx: Int
 
-        if (mask.isVertical) {
+        if (effectiveIsVertical) {
             barWidthPx = thicknessPx
             barHeightPx = (screen.y * mask.lengthRatio).toInt().coerceAtLeast(1)
         } else {

@@ -53,24 +53,26 @@ object OrientationUtil {
     ): PointF {
         return when (rotation) {
             Surface.ROTATION_90 -> {
-                // Rotated 90 degrees clockwise (landscape left)
+                // Rotated 90 degrees counter-clockwise (natural landscape left)
+                // Physical Y maps to Software X; Physical X (measured from left) maps to distance from software bottom
                 PointF(
-                    x = (1f - yPhysRatio) * screenWidth,
-                    y = xPhysRatio * screenHeight
+                    x = yPhysRatio * screenWidth,
+                    y = (1f - xPhysRatio) * screenHeight
                 )
             }
             Surface.ROTATION_180 -> {
-                // Reverse portrait
+                // Reverse portrait (upside down)
                 PointF(
                     x = (1f - xPhysRatio) * screenWidth,
                     y = (1f - yPhysRatio) * screenHeight
                 )
             }
             Surface.ROTATION_270 -> {
-                // Rotated 270 degrees clockwise (landscape right)
+                // Rotated 270 degrees counter-clockwise / 90 degrees clockwise (reverse landscape right)
+                // Physical Y maps to inverted Software X; Physical X maps to Software Y from top
                 PointF(
-                    x = yPhysRatio * screenWidth,
-                    y = (1f - xPhysRatio) * screenHeight
+                    x = (1f - yPhysRatio) * screenWidth,
+                    y = xPhysRatio * screenHeight
                 )
             }
             else -> {
