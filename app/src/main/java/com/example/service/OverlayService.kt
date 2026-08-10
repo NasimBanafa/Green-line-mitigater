@@ -179,6 +179,7 @@ class OverlayService : Service() {
             Color.BLACK
         }
         view.setBackgroundColor(colorInt)
+        view.alpha = if (mask.opacity >= 0.99f) 1.0f else mask.opacity
         view.rotation = mask.angleDegrees
     }
 
@@ -187,13 +188,16 @@ class OverlayService : Service() {
         val screen = OrientationUtil.getScreenDimensions(this)
 
         var flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
                 WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
 
         if (mask.touchPassThrough) {
+            // When pass-through is enabled, ONLY set FLAG_NOT_TOUCHABLE.
+            // FLAG_NOT_TOUCH_MODAL combined with FLAG_NOT_TOUCHABLE causes SurfaceFlinger transparency blending artifacts.
             flags = flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        } else {
+            flags = flags or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
         }
 
         val density = resources.displayMetrics.density
@@ -241,7 +245,7 @@ class OverlayService : Service() {
             windowFormat
         )
 
-        params.alpha = mask.opacity.coerceIn(0.05f, 1.0f)
+        params.alpha = if (isFullyOpaque) 1.0f else mask.opacity.coerceIn(0.05f, 1.0f)
         params.gravity = Gravity.TOP or Gravity.START
         params.x = (mappedPos.x - barWidthPx / 2f).toInt()
         params.y = (mappedPos.y - barHeightPx / 2f).toInt()

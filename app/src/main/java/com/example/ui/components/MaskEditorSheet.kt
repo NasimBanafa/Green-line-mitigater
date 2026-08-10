@@ -20,9 +20,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -63,6 +69,7 @@ import com.example.ui.theme.DarkCard
 import com.example.ui.theme.DarkCardBorder
 import com.example.ui.theme.DarkSurface
 import com.example.ui.theme.EmeraldGreen
+import com.example.ui.theme.IndigoAccent
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
@@ -84,6 +91,7 @@ fun MaskEditorSheet(
     var lengthRatio by remember { mutableFloatStateOf(mask.lengthRatio) }
     var angleDegrees by remember { mutableFloatStateOf(mask.angleDegrees) }
     var opacity by remember { mutableFloatStateOf(mask.opacity) }
+    var fineStep by remember { mutableFloatStateOf(0.001f) } // 0.1% fine tuning step (~1px)
     var colorHex by remember { mutableStateOf(mask.colorHex) }
     var touchPassThrough by remember { mutableStateOf(mask.touchPassThrough) }
     var hardwareLockOrientation by remember { mutableStateOf(mask.hardwareLockOrientation) }
@@ -239,14 +247,15 @@ fun MaskEditorSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "X Position (Horizontal): ${(xPosRatio * 100).toInt()}%",
+                        text = "X Position (Horizontal): ${String.format(java.util.Locale.US, "%.1f", xPosRatio * 100)}%",
                         color = TextPrimary,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold
                     )
-                    Row {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         NudgeButton(label = "-1%") { xPosRatio = (xPosRatio - 0.01f).coerceIn(0f, 1f) }
-                        Spacer(modifier = Modifier.width(4.dp))
+                        NudgeButton(label = "-0.1%") { xPosRatio = (xPosRatio - 0.001f).coerceIn(0f, 1f) }
+                        NudgeButton(label = "+0.1%") { xPosRatio = (xPosRatio + 0.001f).coerceIn(0f, 1f) }
                         NudgeButton(label = "+1%") { xPosRatio = (xPosRatio + 0.01f).coerceIn(0f, 1f) }
                     }
                 }
@@ -272,14 +281,15 @@ fun MaskEditorSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Y Position (Vertical): ${(yPosRatio * 100).toInt()}%",
+                        text = "Y Position (Vertical): ${String.format(java.util.Locale.US, "%.1f", yPosRatio * 100)}%",
                         color = TextPrimary,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold
                     )
-                    Row {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         NudgeButton(label = "-1%") { yPosRatio = (yPosRatio - 0.01f).coerceIn(0f, 1f) }
-                        Spacer(modifier = Modifier.width(4.dp))
+                        NudgeButton(label = "-0.1%") { yPosRatio = (yPosRatio - 0.001f).coerceIn(0f, 1f) }
+                        NudgeButton(label = "+0.1%") { yPosRatio = (yPosRatio + 0.001f).coerceIn(0f, 1f) }
                         NudgeButton(label = "+1%") { yPosRatio = (yPosRatio + 0.01f).coerceIn(0f, 1f) }
                     }
                 }
@@ -294,6 +304,141 @@ fun MaskEditorSheet(
                         inactiveTrackColor = DarkCardBorder
                     )
                 )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Precision Placement D-Pad Controller
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(DarkCard)
+                    .border(1.dp, DarkCardBorder, RoundedCornerShape(16.dp))
+                    .padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Tune, contentDescription = null, tint = CyanAccent, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Precision Placement Pad",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                    }
+                    Text(
+                        text = "Step: ${(fineStep * 100).let { if (it < 0.2f) "0.1% (~1px)" else if (it < 0.8f) "0.5% (~5px)" else "1.0% (~10px)" }}",
+                        fontSize = 11.sp,
+                        color = CyanAccent,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    FilterChip(
+                        selected = fineStep == 0.001f,
+                        onClick = { fineStep = 0.001f },
+                        label = { Text("0.1% Fine", fontSize = 11.sp) },
+                        modifier = Modifier.weight(1f),
+                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = CyanAccent, selectedLabelColor = Color.Black)
+                    )
+                    FilterChip(
+                        selected = fineStep == 0.005f,
+                        onClick = { fineStep = 0.005f },
+                        label = { Text("0.5% Med", fontSize = 11.sp) },
+                        modifier = Modifier.weight(1f),
+                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = CyanAccent, selectedLabelColor = Color.Black)
+                    )
+                    FilterChip(
+                        selected = fineStep == 0.010f,
+                        onClick = { fineStep = 0.010f },
+                        label = { Text("1.0% Coarse", fontSize = 11.sp) },
+                        modifier = Modifier.weight(1f),
+                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = CyanAccent, selectedLabelColor = Color.Black)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // D-Pad Grid
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // UP Button
+                    IconButton(
+                        onClick = { yPosRatio = (yPosRatio - fineStep).coerceIn(0f, 1f) },
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(DarkCardBorder)
+                    ) {
+                        Icon(Icons.Default.ArrowUpward, contentDescription = "Nudge Up", tint = CyanAccent)
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // LEFT - CENTER RESET - RIGHT
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        IconButton(
+                            onClick = { xPosRatio = (xPosRatio - fineStep).coerceIn(0f, 1f) },
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .background(DarkCardBorder)
+                        ) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Nudge Left", tint = CyanAccent)
+                        }
+
+                        IconButton(
+                            onClick = {
+                                xPosRatio = 0.5f
+                                yPosRatio = 0.5f
+                            },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(IndigoAccent.copy(alpha = 0.3f))
+                        ) {
+                            Icon(Icons.Default.CenterFocusStrong, contentDescription = "Center Reset", tint = IndigoAccent)
+                        }
+
+                        IconButton(
+                            onClick = { xPosRatio = (xPosRatio + fineStep).coerceIn(0f, 1f) },
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .background(DarkCardBorder)
+                        ) {
+                            Icon(Icons.Default.ArrowForward, contentDescription = "Nudge Right", tint = CyanAccent)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // DOWN Button
+                    IconButton(
+                        onClick = { yPosRatio = (yPosRatio + fineStep).coerceIn(0f, 1f) },
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(DarkCardBorder)
+                    ) {
+                        Icon(Icons.Default.ArrowDownward, contentDescription = "Nudge Down", tint = CyanAccent)
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))

@@ -143,7 +143,7 @@ fun MaskCard(
                 }
                 BadgeItem(
                     icon = Icons.Default.Lock,
-                    label = "X: ${(mask.xPosRatio * 100).toInt()}% | Y: ${(mask.yPosRatio * 100).toInt()}%",
+                    label = "X: ${String.format(java.util.Locale.US, "%.1f", mask.xPosRatio * 100)}% | Y: ${String.format(java.util.Locale.US, "%.1f", mask.yPosRatio * 100)}%",
                     active = false
                 )
                 BadgeItem(
