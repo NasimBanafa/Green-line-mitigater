@@ -18,5 +18,6 @@ data class MaskBarEntity(
     val isEnabled: Boolean = true,
     val touchPassThrough: Boolean = true,
     val hardwareLockOrientation: Boolean = true,
+    val orientationCondition: String = "ALL", // "ALL", "PORTRAIT_ONLY", "LANDSCAPE_ONLY"
     val createdAt: Long = System.currentTimeMillis()
 )

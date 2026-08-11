@@ -40,9 +40,7 @@ object OrientationUtil {
     }
 
     /**
-     * Converts a physical hardware display coordinate (relative to portrait ROTATION_0)
-     * into current software window coordinates based on active display rotation angle.
-     * This ensures physical green screen line defect remains perfectly masked.
+     * Maps coordinate ratios directly to screen dimensions without rotational transformation.
      */
     fun mapPhysicalToSoftware(
         xPhysRatio: Float,
@@ -51,37 +49,9 @@ object OrientationUtil {
         screenWidth: Int,
         screenHeight: Int
     ): PointF {
-        return when (rotation) {
-            Surface.ROTATION_90 -> {
-                // Rotated 90 degrees counter-clockwise (natural landscape left)
-                // Physical Y maps to Software X; Physical X (measured from left) maps to distance from software bottom
-                PointF(
-                    x = yPhysRatio * screenWidth,
-                    y = (1f - xPhysRatio) * screenHeight
-                )
-            }
-            Surface.ROTATION_180 -> {
-                // Reverse portrait (upside down)
-                PointF(
-                    x = (1f - xPhysRatio) * screenWidth,
-                    y = (1f - yPhysRatio) * screenHeight
-                )
-            }
-            Surface.ROTATION_270 -> {
-                // Rotated 270 degrees counter-clockwise / 90 degrees clockwise (reverse landscape right)
-                // Physical Y maps to inverted Software X; Physical X maps to Software Y from top
-                PointF(
-                    x = (1f - yPhysRatio) * screenWidth,
-                    y = xPhysRatio * screenHeight
-                )
-            }
-            else -> {
-                // ROTATION_0 (Standard portrait)
-                PointF(
-                    x = xPhysRatio * screenWidth,
-                    y = yPhysRatio * screenHeight
-                )
-            }
-        }
+        return PointF(
+            x = xPhysRatio * screenWidth,
+            y = yPhysRatio * screenHeight
+        )
     }
 }

@@ -303,22 +303,16 @@ fun MainScreen(
                     onClick = { selectedTabIndex = 0 }
                 )
                 TabChip(
-                    label = "Orientation Lock",
-                    icon = Icons.Default.ScreenRotation,
+                    label = "Inspector",
+                    icon = Icons.Default.Visibility,
                     selected = selectedTabIndex == 1,
                     onClick = { selectedTabIndex = 1 }
                 )
                 TabChip(
-                    label = "Inspector",
-                    icon = Icons.Default.Visibility,
-                    selected = selectedTabIndex == 2,
-                    onClick = { selectedTabIndex = 2 }
-                )
-                TabChip(
                     label = "Root",
                     icon = Icons.Default.Code,
-                    selected = selectedTabIndex == 3,
-                    onClick = { selectedTabIndex = 3 }
+                    selected = selectedTabIndex == 2,
+                    onClick = { selectedTabIndex = 2 }
                 )
             }
 
@@ -400,89 +394,6 @@ fun MainScreen(
                 }
 
                 1 -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        item {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = DarkCard),
-                                shape = RoundedCornerShape(16.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.Lock, contentDescription = null, tint = CyanAccent)
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column {
-                                            Text(
-                                                text = "Orientation Lock Control",
-                                                style = MaterialTheme.typography.titleMedium.copy(
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = TextPrimary
-                                                )
-                                            )
-                                            Text(
-                                                text = "Keep display rotation fixed for stable mask alignment",
-                                                fontSize = 12.sp,
-                                                color = TextSecondary
-                                            )
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(16.dp))
-
-                                    Button(
-                                        onClick = { viewModel.toggleOrientationLock(context) },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = CyanAccent,
-                                            contentColor = Color.Black
-                                        ),
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(12.dp)
-                                    ) {
-                                        Icon(Icons.Default.ScreenRotation, contentDescription = null)
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Toggle Global System Orientation Lock", fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                            }
-                        }
-
-                        item {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = DarkCard),
-                                shape = RoundedCornerShape(16.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = "How Screen Rotation Works with Defect Masks",
-                                        fontWeight = FontWeight.Bold,
-                                        color = TextPrimary,
-                                        fontSize = 15.sp
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = "When hardware green lines appear on an OLED display, the line defect is physically bonded to the glass panel. When software rotates from Portrait to Landscape, physical display coordinates shift relative to app views.",
-                                        fontSize = 13.sp,
-                                        color = TextSecondary,
-                                        lineHeight = 18.sp
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Text(
-                                        text = "Line Mask includes two solutions:\n1. 'Hardware Fixed Placement' mapping: Translates coordinates dynamically so the black bar stays glued to the physical defect.\n2. 'Orientation Lock': Prevents auto-rotation while masks are active.",
-                                        fontSize = 13.sp,
-                                        color = CyanAccent,
-                                        lineHeight = 18.sp
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                2 -> {
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -538,7 +449,7 @@ fun MainScreen(
                     }
                 }
 
-                3 -> {
+                2 -> {
                     RootLsposedGuide(
                         isRootAvailable = isRootAvailable,
                         rootMessage = rootMessage,
