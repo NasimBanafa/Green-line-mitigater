@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -96,7 +95,6 @@ fun MaskEditorSheet(
     var colorHex by remember { mutableStateOf(mask.colorHex) }
     var touchPassThrough by remember { mutableStateOf(mask.touchPassThrough) }
     var hardwareLockOrientation by remember { mutableStateOf(mask.hardwareLockOrientation) }
-    var orientationCondition by remember { mutableStateOf(mask.orientationCondition) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -549,6 +547,41 @@ fun MaskEditorSheet(
                 )
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(DarkCard)
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Hardware Fixed Placement",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                    )
+                    Text(
+                        text = "Prevents black bar from moving away from physical screen defect when phone rotates",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+                }
+                Switch(
+                    checked = hardwareLockOrientation,
+                    onCheckedChange = { hardwareLockOrientation = it },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.Black,
+                        checkedTrackColor = CyanAccent
+                    )
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
@@ -586,83 +619,6 @@ fun MaskEditorSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(DarkCard)
-                    .padding(12.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.ScreenRotation,
-                        contentDescription = null,
-                        tint = CyanAccent,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Display Condition (Orientation)",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
-                        )
-                    )
-                }
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "Render condition for phone orientation",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    FilterChip(
-                        selected = orientationCondition == "ALL",
-                        onClick = { orientationCondition = "ALL" },
-                        label = { Text("Both", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
-                        modifier = Modifier.weight(1f),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = CyanAccent,
-                            selectedLabelColor = Color.Black,
-                            containerColor = DarkCardBorder,
-                            labelColor = TextPrimary
-                        )
-                    )
-                    FilterChip(
-                        selected = orientationCondition == "PORTRAIT_ONLY" || orientationCondition == "VERTICAL_ONLY",
-                        onClick = { orientationCondition = "PORTRAIT_ONLY" },
-                        label = { Text("Vertical Only", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
-                        modifier = Modifier.weight(1f),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = CyanAccent,
-                            selectedLabelColor = Color.Black,
-                            containerColor = DarkCardBorder,
-                            labelColor = TextPrimary
-                        )
-                    )
-                    FilterChip(
-                        selected = orientationCondition == "LANDSCAPE_ONLY" || orientationCondition == "HORIZONTAL_ONLY",
-                        onClick = { orientationCondition = "LANDSCAPE_ONLY" },
-                        label = { Text("Horizontal Only", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
-                        modifier = Modifier.weight(1f),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = CyanAccent,
-                            selectedLabelColor = Color.Black,
-                            containerColor = DarkCardBorder,
-                            labelColor = TextPrimary
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             Text(
                 text = "Mask Color Palette",
                 style = MaterialTheme.typography.bodyMedium.copy(
@@ -695,8 +651,7 @@ fun MaskEditorSheet(
                         opacity = opacity,
                         colorHex = colorHex,
                         touchPassThrough = touchPassThrough,
-                        hardwareLockOrientation = hardwareLockOrientation,
-                        orientationCondition = orientationCondition
+                        hardwareLockOrientation = hardwareLockOrientation
                     )
                     onSave(updated)
                 },

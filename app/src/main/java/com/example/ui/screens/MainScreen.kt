@@ -3,9 +3,11 @@ package com.example.ui.screens
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +32,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -41,6 +44,8 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -206,6 +211,101 @@ fun MainScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // Quick Settings Tile & Master Overlay Toggle Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("quick_settings_overlay_card"),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isServiceRunning) EmeraldGreen.copy(alpha = 0.12f) else DarkCard
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, if (isServiceRunning) EmeraldGreen.copy(alpha = 0.5f) else DarkCardBorder)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isServiceRunning) EmeraldGreen else IndigoAccent.copy(alpha = 0.2f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Tune,
+                                        contentDescription = "Quick Settings Overlay Toggle",
+                                        tint = if (isServiceRunning) Color.Black else CyanAccent,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "Quick Settings Overlay Toggle",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = TextPrimary
+                                        )
+                                    )
+                                    Text(
+                                        text = if (isServiceRunning) "Overlay Active • Synced with System Quick Tile" else "Overlay Off • Fast 1-Tap Shade Toggle",
+                                        fontSize = 11.sp,
+                                        color = if (isServiceRunning) EmeraldGreen else TextSecondary
+                                    )
+                                }
+                            }
+
+                            Switch(
+                                checked = isServiceRunning,
+                                onCheckedChange = { viewModel.toggleService(context) },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.Black,
+                                    checkedTrackColor = EmeraldGreen,
+                                    uncheckedThumbColor = TextMuted,
+                                    uncheckedTrackColor = DarkCardBorder
+                                ),
+                                modifier = Modifier.testTag("quick_settings_overlay_switch")
+                            )
+                        }
+
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(DarkCardBorder.copy(alpha = 0.5f))
+                                    .clickable { viewModel.requestAddQuickTile(context) }
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Add 'Line Mask' tile to System Quick Settings Shade",
+                                    fontSize = 11.sp,
+                                    color = CyanAccent,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Add QS Tile",
+                                    tint = CyanAccent,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 val isXposedActive = remember { com.example.xposed.XposedStatus.isModuleActive() }
                 Row(
                     modifier = Modifier
@@ -303,16 +403,22 @@ fun MainScreen(
                     onClick = { selectedTabIndex = 0 }
                 )
                 TabChip(
-                    label = "Inspector",
-                    icon = Icons.Default.Visibility,
+                    label = "Orientation Lock",
+                    icon = Icons.Default.ScreenRotation,
                     selected = selectedTabIndex == 1,
                     onClick = { selectedTabIndex = 1 }
                 )
                 TabChip(
-                    label = "Root",
-                    icon = Icons.Default.Code,
+                    label = "Inspector",
+                    icon = Icons.Default.Visibility,
                     selected = selectedTabIndex == 2,
                     onClick = { selectedTabIndex = 2 }
+                )
+                TabChip(
+                    label = "Root",
+                    icon = Icons.Default.Code,
+                    selected = selectedTabIndex == 3,
+                    onClick = { selectedTabIndex = 3 }
                 )
             }
 
@@ -394,6 +500,89 @@ fun MainScreen(
                 }
 
                 1 -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = DarkCard),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.Lock, contentDescription = null, tint = CyanAccent)
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(
+                                                text = "Orientation Lock Control",
+                                                style = MaterialTheme.typography.titleMedium.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = TextPrimary
+                                                )
+                                            )
+                                            Text(
+                                                text = "Keep display rotation fixed for stable mask alignment",
+                                                fontSize = 12.sp,
+                                                color = TextSecondary
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    Button(
+                                        onClick = { viewModel.toggleOrientationLock(context) },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = CyanAccent,
+                                            contentColor = Color.Black
+                                        ),
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Icon(Icons.Default.ScreenRotation, contentDescription = null)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Toggle Global System Orientation Lock", fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = DarkCard),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Text(
+                                        text = "How Screen Rotation Works with Defect Masks",
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimary,
+                                        fontSize = 15.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "When hardware green lines appear on an OLED display, the line defect is physically bonded to the glass panel. When software rotates from Portrait to Landscape, physical display coordinates shift relative to app views.",
+                                        fontSize = 13.sp,
+                                        color = TextSecondary,
+                                        lineHeight = 18.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = "Line Mask includes two solutions:\n1. 'Hardware Fixed Placement' mapping: Translates coordinates dynamically so the black bar stays glued to the physical defect.\n2. 'Orientation Lock': Prevents auto-rotation while masks are active.",
+                                        fontSize = 13.sp,
+                                        color = CyanAccent,
+                                        lineHeight = 18.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                2 -> {
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -449,7 +638,7 @@ fun MainScreen(
                     }
                 }
 
-                2 -> {
+                3 -> {
                     RootLsposedGuide(
                         isRootAvailable = isRootAvailable,
                         rootMessage = rootMessage,

@@ -43,6 +43,17 @@
                 android:value="Draw overlay masks for screen line defect covering" />
         </service>
 
+        <service
+            android:name=".service.OverlayTileService"
+            android:icon="@drawable/ic_launcher_foreground"
+            android:label="Line Mask Overlay"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
         <receiver
             android:name=".service.BootReceiver"
             android:enabled="true"

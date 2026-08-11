@@ -13,10 +13,12 @@ import com.example.data.MaskBarEntity
 import com.example.data.MaskBarRepository
 import com.example.service.OverlayService
 import com.example.util.RootUtil
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -53,9 +55,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         checkPermissionsAndStatus()
 
-        viewModelScope.launch {
-            repository.allMasks.collect { list ->
-                if (list.isEmpty()) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val initialList = repository.allMasks.first()
+                if (initialList.isEmpty()) {
                     repository.insert(
                         MaskBarEntity(
                             name = "Primary Green Line Mask",
@@ -71,6 +74,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         )
                     )
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -108,6 +113,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             action = OverlayService.ACTION_TOGGLE_ORIENTATION_LOCK
         }
         context.startService(intent)
+    }
+
+    fun requestAddQuickTile(context: Context) {
+        com.example.service.OverlayTileService.requestAddTile(context)
     }
 
     fun setEditingMask(mask: MaskBarEntity?) {

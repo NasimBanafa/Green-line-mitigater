@@ -40,7 +40,9 @@ object OrientationUtil {
     }
 
     /**
-     * Maps coordinate ratios directly to screen dimensions without rotational transformation.
+     * Converts a physical hardware display coordinate (relative to portrait ROTATION_0)
+     * into current software window coordinates based on active display rotation angle.
+     * This ensures physical green screen line defect remains perfectly masked.
      */
     fun mapPhysicalToSoftware(
         xPhysRatio: Float,
@@ -49,9 +51,35 @@ object OrientationUtil {
         screenWidth: Int,
         screenHeight: Int
     ): PointF {
-        return PointF(
-            x = xPhysRatio * screenWidth,
-            y = yPhysRatio * screenHeight
-        )
+        return when (rotation) {
+            Surface.ROTATION_90 -> {
+                // Rotated 90 degrees clockwise (landscape left)
+                PointF(
+                    x = (1f - yPhysRatio) * screenWidth,
+                    y = xPhysRatio * screenHeight
+                )
+            }
+            Surface.ROTATION_180 -> {
+                // Reverse portrait
+                PointF(
+                    x = (1f - xPhysRatio) * screenWidth,
+                    y = (1f - yPhysRatio) * screenHeight
+                )
+            }
+            Surface.ROTATION_270 -> {
+                // Rotated 270 degrees clockwise (landscape right)
+                PointF(
+                    x = yPhysRatio * screenWidth,
+                    y = (1f - xPhysRatio) * screenHeight
+                )
+            }
+            else -> {
+                // ROTATION_0 (Standard portrait)
+                PointF(
+                    x = xPhysRatio * screenWidth,
+                    y = yPhysRatio * screenHeight
+                )
+            }
+        }
     }
 }

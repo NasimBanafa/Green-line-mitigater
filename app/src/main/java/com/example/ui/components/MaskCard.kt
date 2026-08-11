@@ -129,15 +129,10 @@ fun MaskCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val condLabel = when (mask.orientationCondition) {
-                    "PORTRAIT_ONLY", "VERTICAL_ONLY" -> "Vertical Only"
-                    "LANDSCAPE_ONLY", "HORIZONTAL_ONLY" -> "Horizontal Only"
-                    else -> "Both Orientations"
-                }
                 BadgeItem(
                     icon = Icons.Default.ScreenRotation,
-                    label = condLabel,
-                    active = mask.orientationCondition != "ALL"
+                    label = if (mask.hardwareLockOrientation) "Hardware Fixed" else "Rotates",
+                    active = mask.hardwareLockOrientation
                 )
                 if (mask.touchPassThrough) {
                     BadgeItem(

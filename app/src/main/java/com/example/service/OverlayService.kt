@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.content.pm.ServiceInfo
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
@@ -18,7 +19,6 @@ import android.util.Log
 import android.view.Display
 import android.view.Gravity
 import android.view.OrientationEventListener
-import android.view.Surface
 import android.view.View
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
@@ -64,6 +64,7 @@ class OverlayService : Service() {
     override fun onCreate() {
         super.onCreate()
         isRunning = true
+        notifyTileUpdate()
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         createNotificationChannel()
 
@@ -76,10 +77,32 @@ class OverlayService : Service() {
         if (action == ACTION_STOP) {
             stopSelf()
             return START_NOT_STICKY
+        } else if (action == ACTION_TOGGLE_ORIENTATION_LOCK) {
+            isOrientationLocked = !isOrientationLocked
+            if (isOrientationLocked) {
+                val rot = OrientationUtil.getDisplayRotation(this)
+                currentLockedOrientation = when (rot) {
+                    android.view.Surface.ROTATION_90 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                    android.view.Surface.ROTATION_180 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
+                    android.view.Surface.ROTATION_270 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+                    else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                }
+                applyOrientationLock(true, currentLockedOrientation)
+            } else {
+                applyOrientationLock(false)
+            }
         }
 
         val notification = buildNotification()
-        startForeground(NOTIFICATION_ID, notification)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+        } catch (e: Exception) {
+            Log.e("OverlayService", "Error calling startForeground", e)
+        }
 
         return START_STICKY
     }
@@ -95,20 +118,8 @@ class OverlayService : Service() {
         }
     }
 
-    private fun shouldRenderMask(mask: MaskBarEntity, isPortrait: Boolean): Boolean {
-        return when (mask.orientationCondition) {
-            "PORTRAIT_ONLY", "VERTICAL_ONLY" -> isPortrait
-            "LANDSCAPE_ONLY", "HORIZONTAL_ONLY" -> !isPortrait
-            else -> true
-        }
-    }
-
     private fun updateOverlayViews(masks: List<MaskBarEntity>) {
-        val screen = OrientationUtil.getScreenDimensions(this)
-        val isPortrait = screen.y >= screen.x
-
-        val renderableMasks = masks.filter { shouldRenderMask(it, isPortrait) }
-        val currentIds = renderableMasks.map { it.id }.toSet()
+        val currentIds = masks.map { it.id }.toSet()
 
         val iterator = overlayViews.entries.iterator()
         while (iterator.hasNext()) {
@@ -123,7 +134,7 @@ class OverlayService : Service() {
             }
         }
 
-        renderableMasks.forEach { mask ->
+        masks.forEach { mask ->
             val existingView = overlayViews[mask.id]
             if (existingView != null) {
                 updateSingleOverlayView(existingView, mask)
@@ -183,6 +194,7 @@ class OverlayService : Service() {
     }
 
     private fun createLayoutParamsForMask(mask: MaskBarEntity): WindowManager.LayoutParams {
+        val rotation = OrientationUtil.getDisplayRotation(this)
         val screen = OrientationUtil.getScreenDimensions(this)
 
         var flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
@@ -212,8 +224,20 @@ class OverlayService : Service() {
             barHeightPx = thicknessPx
         }
 
-        val targetX = mask.xPosRatio * screen.x
-        val targetY = mask.yPosRatio * screen.y
+        val mappedPos = if (mask.hardwareLockOrientation) {
+            OrientationUtil.mapPhysicalToSoftware(
+                mask.xPosRatio,
+                mask.yPosRatio,
+                rotation,
+                screen.x,
+                screen.y
+            )
+        } else {
+            PointF(
+                x = mask.xPosRatio * screen.x,
+                y = mask.yPosRatio * screen.y
+            )
+        }
 
         val isFullyOpaque = mask.opacity >= 0.99f
         // PixelFormat.OPAQUE bypasses SurfaceFlinger alpha blending pass for 100% true OLED black (0 nits)
@@ -233,8 +257,8 @@ class OverlayService : Service() {
 
         params.alpha = if (isFullyOpaque) 1.0f else mask.opacity.coerceIn(0.05f, 1.0f)
         params.gravity = Gravity.TOP or Gravity.START
-        params.x = (targetX - barWidthPx / 2f).toInt()
-        params.y = (targetY - barHeightPx / 2f).toInt()
+        params.x = (mappedPos.x - barWidthPx / 2f).toInt()
+        params.y = (mappedPos.y - barHeightPx / 2f).toInt()
 
         return params
     }
@@ -267,6 +291,53 @@ class OverlayService : Service() {
         }
     }
 
+    private fun applyOrientationLock(enable: Boolean, orientation: Int = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
+        if (enable) {
+            if (!Settings.canDrawOverlays(this)) {
+                Log.e("OverlayService", "Overlay permission missing, skipping orientation lock view.")
+                return
+            }
+            if (orientationLockView == null) {
+                val dummy = View(this)
+                val params = WindowManager.LayoutParams(
+                    1, 1,
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                    PixelFormat.TRANSLUCENT
+                )
+                params.screenOrientation = orientation
+                try {
+                    windowManager.addView(dummy, params)
+                    orientationLockView = dummy
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            } else {
+                val params = orientationLockView?.layoutParams as? WindowManager.LayoutParams
+                if (params != null) {
+                    params.screenOrientation = orientation
+                    try {
+                        windowManager.updateViewLayout(orientationLockView, params)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        } else {
+            orientationLockView?.let { view ->
+                try {
+                    windowManager.removeView(view)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            orientationLockView = null
+        }
+        val notification = buildNotification()
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(NOTIFICATION_ID, notification)
+    }
+
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -289,6 +360,14 @@ class OverlayService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val toggleLockIntent = Intent(this, OverlayService::class.java).apply {
+            action = ACTION_TOGGLE_ORIENTATION_LOCK
+        }
+        val pendingToggleLock = PendingIntent.getService(
+            this, 1, toggleLockIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val stopIntent = Intent(this, OverlayService::class.java).apply {
             action = ACTION_STOP
         }
@@ -297,13 +376,16 @@ class OverlayService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val lockStateText = if (isOrientationLocked) "Orientation Locked" else "Orientation Free"
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Line Mask Overlay Active")
-            .setContentText("Black line masks active")
+            .setContentText("Masks active. Status: $lockStateText")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(pendingOpen)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .addAction(0, if (isOrientationLocked) "Unlock Orientation" else "Lock Orientation", pendingToggleLock)
             .addAction(0, "Stop Service", pendingStop)
             .build()
     }
@@ -326,7 +408,23 @@ class OverlayService : Service() {
         }
         overlayViews.clear()
 
+        applyOrientationLock(false)
+
         serviceJob.cancel()
+        notifyTileUpdate()
+    }
+
+    private fun notifyTileUpdate() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            try {
+                android.service.quicksettings.TileService.requestListeningState(
+                    this,
+                    android.content.ComponentName(this, OverlayTileService::class.java)
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
